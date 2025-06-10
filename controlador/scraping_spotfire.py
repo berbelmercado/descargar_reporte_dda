@@ -19,6 +19,7 @@ Dependencias:
 """
 
 import pyautogui
+import pygetwindow as gw
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.keys import Keys
@@ -57,8 +58,13 @@ class ScraperController:
         """
         self.ruta_driver = resource_path(getenv('RUTA_WEBDRIVER'))
         self.url_sopotfire = getenv('RUTA_SPOTFIRE')
+        #Rutas de carpetas
+        self.carp_reports = getenv('XPATH_CARPETA_REPORTS')
+        self.carp_reports_published = getenv('XPATH_CARPETA_REPORTS_PUBLISHED')
+        self.cartp_dda_activity_report = getenv('XPATH_CARPETA_DDA_ACTIVITY_REPORT')
+
         self.anno_reporte = getenv('XPATH_YEAR_REPORTE')
-        self.ruta_descarga_reporte = resource_path(getenv('DESCARGA_REPORTE'))
+        self.__ruta_descarga_reporte = resource_path(getenv('DESCARGA_REPORTE'))
         self.obj_log = Logger()
         self.obj_procesar_archivo = ProcesarArchivo()
 
@@ -84,7 +90,7 @@ class ScraperController:
 
             # Configurar las preferencias de descarga
             prefs = {
-                'download.default_directory': self.ruta_descarga_reporte,
+                'download.default_directory': self.__ruta_descarga_reporte,
                 'download.prompt_for_download': False,
                 'download.directory_upgrade': True,
                 'safebrowsing.enabled': True
@@ -93,8 +99,8 @@ class ScraperController:
             #Indicamos la ruta donde se descargará el archivo
             options.add_experimental_option('prefs', prefs)
 
-            options.add_argument('--log-level=3')
-            options.add_argument('--disable-browser-switcher') 
+            # options.add_argument('--log-level=3')
+            # options.add_argument('--disable-browser-switcher')
 
             nav_driver = webdriver.Chrome(service = service
                                         ,options = options)
@@ -113,11 +119,17 @@ class ScraperController:
             time.sleep(10)
 
             try:
-                # Usar pyautogui para interactuar con el cuadro de diálogo del sistema
-                pyautogui.press('down')  # Presionar la tecla de flecha abajo
-                pyautogui.press('enter')  # Presionar la tecla Enter
+
+                # Traer la ventana de Chrome al frente
+                chrome_windows = [w for w in gw.getWindowsWithTitle("Chrome") if w.isActive == False]
+                if chrome_windows:
+                    chrome_windows[0].activate()
+
             except:
                 self.obj_log.log('No hay ventana de dialogo')
+            #Usar pyautogui para interactuar con el cuadro de diálogo del sistema
+            pyautogui.press('down')  # Presionar la tecla de flecha abajo
+            pyautogui.press('enter')  # Presionar la tecla Enter
 
             #Clic en iniciar cesiósn
             nav_driver.find_element(By.ID, 'loginButton2').click()
@@ -132,26 +144,27 @@ class ScraperController:
             #Doble clic elemento
             accion.double_click(elemento_car_ope).perform()
 
-            #Encontrar ecarpeta Reports
-            elemento_car_reports = nav_driver.find_element(By.ID, '711f439e-f830-4297-b434-073d5f44ee1e')
+            #Encontrar carpeta Reports
+            elemento_car_reports = nav_driver.find_element(By.XPATH, self.carp_reports)
             accion.double_click(elemento_car_reports).perform()
 
             #Encontrar carpeta Report_published
-            elemento_car_reports_published = nav_driver.find_element(By.ID, '214fde3b-22e9-4029-99b5-dea85e7a548c')
+            elemento_car_reports_published = nav_driver.find_element(By.XPATH, self.carp_reports_published)
             accion.double_click(elemento_car_reports_published).perform()
 
+
             #Encontrar dda activiti report
-            elemento_dda_activity_reports = nav_driver.find_element(By.ID, '34c92c8f-5411-462e-9e02-7931ed2e4a85')
+            elemento_dda_activity_reports = nav_driver.find_element(By.XPATH, self.cartp_dda_activity_report)
             accion.double_click(elemento_dda_activity_reports).perform()
 
             # Obtener los identificadores de las ventanas
             ventanas = nav_driver.window_handles
 
             # Cambiar a la nueva pestaña (la última en la lista)
-            nav_driver.switch_to.window(ventanas[-1])
+            nav_driver.switch_to.window(ventanas[1])
 
             #Encontrar elemento delailed view
-            elemento_detail_view = WebDriverWait(nav_driver, 400).until(
+            elemento_detail_view =  WebDriverWait(nav_driver, 120).until(
             EC.presence_of_element_located((By.ID, '0b9249dba6e945eaa3838b1aad644c5c')))
             elemento_detail_view.click()
 
@@ -192,7 +205,7 @@ class ScraperController:
             contador=0
             while contador<= 12:
                 elemento_scroll.click()
-                contador+=1
+                contador+=1  
             time.sleep(3)
 
             # seleccionar año
@@ -238,4 +251,3 @@ class ScraperController:
                     self.obj_procesar_archivo.procesar_archivo()
         else:
             self.obj_log.error('El archivo no existe\n')
-                                                                                                                                      
