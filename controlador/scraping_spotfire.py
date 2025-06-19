@@ -161,12 +161,34 @@ class ScraperController:
             ventanas = nav_driver.window_handles
 
             # Cambiar a la nueva pestaña (la última en la lista)
-            nav_driver.switch_to.window(ventanas[1])
+            #nav_driver.switch_to.window(ventanas[1])
+            # Guarda el handle de la ventana original
+            ventana_original = nav_driver.current_window_handle
+
+            # Realiza la acción que abre la nueva pestaña/ventana
+            # ... (por ejemplo, un doble clic que abre la nueva ventana)
+
+            # Espera a que haya más de una ventana
+            WebDriverWait(nav_driver, 10).until(lambda d: len(d.window_handles) > 1)
+
+            # Cambia a la nueva ventana
+            for handle in nav_driver.window_handles:
+                if handle != ventana_original:
+                    nav_driver.switch_to.window(handle)
+                    break
 
             #Encontrar elemento delailed view
-            elemento_detail_view =  WebDriverWait(nav_driver, 120).until(
-            EC.presence_of_element_located((By.ID, '0b9249dba6e945eaa3838b1aad644c5c')))
-            elemento_detail_view.click()
+            # elemento_detail_view =  WebDriverWait(nav_driver, 120).until(
+            # EC.element_to_be_clickable((By.ID, '0b9249dba6e945eaa3838b1aad644c5c')))
+            # elemento_detail_view.click()
+            time.sleep(40)
+            elemento = WebDriverWait(nav_driver, 120).until(
+                EC.presence_of_element_located((By.ID, '0b9249dba6e945eaa3838b1aad644c5c'))
+            )
+            nav_driver.execute_script("arguments[0].scrollIntoView();", elemento)
+            WebDriverWait(nav_driver, 120).until(
+                EC.element_to_be_clickable((By.ID, '0b9249dba6e945eaa3838b1aad644c5c'))
+            ).click()
 
             ##seleccionar pivotage
             element_pivotage =   WebDriverWait(nav_driver, 120).until(
@@ -177,7 +199,7 @@ class ScraperController:
             nav_driver.find_element(By.CLASS_NAME, 'sf-element-dropdown-list-item').click()
             time.sleep(3)
 
-            # #Abrir panel paises 
+            # #Abrir panel paises
             WebDriverWait(nav_driver, 120).until(EC.presence_of_element_located((By.XPATH,'/html/body/div/div[2]/div/div[1]/div/div/div[1]/div/div[2]/div/div/div/div/div/div/div/div/div[3]/div[1]/div[1]/div[1]/button[1]'))).click()
             time.sleep(60)
 
@@ -232,7 +254,7 @@ class ScraperController:
             return True
 
         except Exception as ex:
-            nav_driver.quit()
+            #nav_driver.quit()
             #Resgitro log
             self.obj_log.error(f'Error al descargar el archivo de spotfire {ex}\n')
             return False
