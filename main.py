@@ -11,37 +11,52 @@ Funciones:
 Dependencias:
 -------------
 - controlador.scraping_spotfire.ScraperController
-- dotenv.load_dotenv
+- dotenv.load_dot00env
 - servicios.resolver_rutas.resource_path
 - os.getenv
 - modelo.procesar_archivo.ProcesarArchivo
 """
+
 from controlador.scraping_spotfire import ScraperController
 from dotenv import load_dotenv
 from servicios.resolver_rutas import resource_path
 from os import getenv
 from modelo.procesar_archivo import ProcesarArchivo
 
-def main():
+import time
+from dotenv import load_dotenv
+from servicios.resolver_rutas import resource_path
+from controlador.scraping_spotfire import ScraperController
+from vista.logger import Logger
+
+
+MAX_INTENTOS = 2  # Número máximo de reintentos
+WAIT_REINTENTO = 30  # Segundos de espera entre intentos
+
+
+def main() -> None:
     """
-    Función principal que ejecuta la automatización de descarga y procesamiento de reportes.
-
-    Carga las variables de entorno, crea un objeto ScraperController para manejar la descarga de reportes,
-    e intenta descargar y procesar el archivo hasta 3 veces antes de finalizar la ejecución.
+    Función principal que ejecuta la descarga y procesamiento del reporte DDA.
     """
-    #Cargar variables de entorno
-    load_dotenv(resource_path('.env'))
 
-    #Creamos objeto para scraping
-    obj_scraping_controller = ScraperController()
+    # Cargar variables de entorno
+    load_dotenv(resource_path(".env"))
 
-    intento=0
-    #Se intenta descargar el archivo 3 veces antes de finalizar ejecución
-    while intento<=3:
-        if obj_scraping_controller.descargar_reporte_dda():
-            obj_scraping_controller.procesar_insertar_data()
-            intento=4
-        else:
-            intento+=1
+    scraper = ScraperController()
+    log = Logger()
+    for intento in range(1, MAX_INTENTOS + 1):
+        log.log(f"Intento {intento} de {MAX_INTENTOS}...")
+
+        if scraper.descargar_reporte_dda():
+            scraper.procesar_insertar_data()
+            log.log("Reporte descargado y procesado exitosamente.\n")
+            return
+
+        log.error("Fallo en la descarga. Reintentando...")
+        time.sleep(WAIT_REINTENTO)
+
+    log.error("No fue posible descargar el reporte tras varios intentos.")
+
+
 if __name__ == "__main__":
     main()
